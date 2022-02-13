@@ -6,6 +6,7 @@
 # Run
 `docker run -dp 8080:8080 proxy`
 
+# Status
 - [x] HTTP Proxy
 - [ ] HTTPS Proxy
 - [ ] Query storage
