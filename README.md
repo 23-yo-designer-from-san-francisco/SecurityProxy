@@ -1,8 +1,12 @@
 ## Simple HTTP proxy server
 
-#Build
+# Build
 `docker build -t proxy .`
 
-#Run
+# Run
 `docker run -dp 8080:8080 proxy`
 
+- [x] HTTP Proxy
+- [ ] HTTPS Proxy
+- [ ] Query storage
+- [ ] Vulnerability scanner
