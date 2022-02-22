@@ -1,13 +1,21 @@
 FROM golang:1.17-alpine
 
+RUN apk add openssl
+
 WORKDIR /app
 
-COPY go.mod .
+COPY . .
 
-COPY main.go .
+WORKDIR /app/scripts
 
-RUN go build -o proxy
+RUN ./init.sh
 
-cmd ["/app/proxy"]
+WORKDIR /app/src
+
+RUN go build -o /app/proxy main.go
+
+WORKDIR /app
+
+CMD ["/app/proxy"]
 
 EXPOSE 8080
