@@ -1,6 +1,7 @@
-package handlers
+package proxyHandlers
 
 import (
+	"Proxy/db"
 	"github.com/sirupsen/logrus"
 	"net/http"
 )
@@ -14,14 +15,6 @@ func contains(slice []string, value string) bool {
 	return false
 }
 
-func copyHeaders(from, to http.Header) {
-	for header, values := range from {
-		for _, value := range values {
-			to.Add(header, value)
-		}
-	}
-}
-
 func ServeHttp(respWriter http.ResponseWriter, request *http.Request) {
 
 	logrus.Info("Request: " + request.RequestURI)
@@ -29,13 +22,18 @@ func ServeHttp(respWriter http.ResponseWriter, request *http.Request) {
 	var err error
 	var hh Handler
 
+	dbConn, err := db.CreateNewDatabaseConnection()
+	if err != nil {
+		logrus.Fatal(dbConnectErr, err.Error())
+	}
+
 	if request.Method == http.MethodConnect {
-		hh, err = NewHttpsHandler(respWriter, request)
+		hh, err = NewHttpsHandler(respWriter, request, dbConn)
 		if err != nil {
 			logrus.Error(err)
 		}
 	} else {
-		hh = NewHttpHandler(respWriter, request)
+		hh = NewHttpHandler(respWriter, request, dbConn)
 	}
 
 	err = hh.ProxyRequest()
@@ -43,5 +41,5 @@ func ServeHttp(respWriter http.ResponseWriter, request *http.Request) {
 		logrus.Error(err)
 	}
 
-	hh.Defer()
+	defer hh.Defer()
 }

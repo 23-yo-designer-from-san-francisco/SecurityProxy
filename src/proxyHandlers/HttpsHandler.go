@@ -1,8 +1,11 @@
-package handlers
+package proxyHandlers
 
 import (
+	"Proxy/db"
+	"Proxy/utils"
 	"bufio"
 	"crypto/tls"
+	"github.com/sirupsen/logrus"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -19,12 +22,14 @@ type HttpsHandler struct {
 	clientTcpConnection net.Conn
 	parsedUrl           *url.URL
 	proxyResp           *http.Response
+	dbConn              *db.Database
 }
 
-func NewHttpsHandler(respWriter http.ResponseWriter, connectRequest *http.Request) (*HttpsHandler, error) {
+func NewHttpsHandler(respWriter http.ResponseWriter, connectRequest *http.Request, dbConn *db.Database) (*HttpsHandler, error) {
 	hh := &HttpsHandler{}
 	hh.respWriter = respWriter
 	hh.connectRequest = connectRequest
+	hh.dbConn = dbConn
 
 	var err error
 
@@ -60,6 +65,18 @@ func (hh *HttpsHandler) ProxyRequest() error {
 		return err
 	}
 
+	reqDump, err := httputil.DumpRequest(hh.clientRequest, true)
+	if err != nil {
+		logrus.Warn(reqDumpErr, err.Error())
+	}
+
+	dbReq := db.Request{
+		Host:    "https://" + hh.parsedUrl.Scheme + hh.clientRequest.URL.Path,
+		Request: string(reqDump),
+	}
+
+	hh.dbConn.InsertRequest(dbReq)
+
 	err = hh.doHttpsProxyRequest()
 	if err != nil {
 		return err
@@ -76,6 +93,7 @@ func (hh *HttpsHandler) ProxyRequest() error {
 func (hh *HttpsHandler) Defer() {
 	hh.clientTcpConnection.Close()
 	hh.serverTcpConnection.Close()
+	hh.dbConn.Close()
 }
 
 func (hh *HttpsHandler) doHttpsProxyRequest() error {
@@ -103,7 +121,7 @@ func (hh *HttpsHandler) setupHttpsClientConnection() error {
 		return err
 	}
 
-	_, err = raw.Write([]byte("HTTP/1.1 200 Connection established\r\n\r\n"))
+	_, err = raw.Write([]byte(httpOkResponse))
 	if err != nil {
 		raw.Close()
 		return err
@@ -161,20 +179,20 @@ func (hh *HttpsHandler) setupHttpsConfig() error {
 		return err
 	}
 
-	genScriptAndRootCaDir := pwd + "/scripts"
-	certsDir := pwd + "/certs/"
+	genScriptAndRootCaDir := pwd + scriptsDir
+	certsDir := pwd + certsDir
 
 	certFilename := certsDir + hh.parsedUrl.Scheme + ".crt"
 
 	_, err = os.Stat(certFilename)
 	if os.IsNotExist(err) {
-		err = genProxyCert(genScriptAndRootCaDir, "/gen_cert.sh", hh.parsedUrl.Scheme, certsDir)
+		err = utils.GenProxyCert(genScriptAndRootCaDir, genCertScript, hh.parsedUrl.Scheme, certsDir)
 		if err != nil {
 			return err
 		}
 	}
 
-	cert, err := tls.LoadX509KeyPair(certFilename, genScriptAndRootCaDir+"/cert.key")
+	cert, err := tls.LoadX509KeyPair(certFilename, genScriptAndRootCaDir+certKey)
 	if err != nil {
 		return err
 	}

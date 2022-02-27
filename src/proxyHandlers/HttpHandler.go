@@ -1,8 +1,12 @@
-package handlers
+package proxyHandlers
 
 import (
+	"Proxy/db"
+	"Proxy/utils"
+	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
+	"net/http/httputil"
 	"strings"
 )
 
@@ -10,12 +14,14 @@ type HttpHandler struct {
 	respWriter    http.ResponseWriter
 	clientRequest *http.Request
 	proxyResp     *http.Response
+	dbConn        *db.Database
 }
 
-func NewHttpHandler(respWriter http.ResponseWriter, clientRequest *http.Request) *HttpHandler {
+func NewHttpHandler(respWriter http.ResponseWriter, clientRequest *http.Request, dbConn *db.Database) *HttpHandler {
 	return &HttpHandler{
 		respWriter:    respWriter,
 		clientRequest: clientRequest,
+		dbConn:        dbConn,
 	}
 }
 
@@ -34,6 +40,7 @@ func (hh *HttpHandler) ProxyRequest() error {
 }
 
 func (hh *HttpHandler) Defer() {
+	hh.dbConn.Close()
 }
 
 func (hh *HttpHandler) doRequest() error {
@@ -56,6 +63,17 @@ func (hh *HttpHandler) doRequest() error {
 		}
 	}
 
+	reqDump, err := httputil.DumpRequest(proxyReq, true)
+	if err != nil {
+		logrus.Warn(reqDumpErr, err.Error())
+	}
+
+	dbReq := db.Request{
+		Host:    hh.clientRequest.RequestURI,
+		Request: string(reqDump),
+	}
+	hh.dbConn.InsertRequest(dbReq)
+
 	hh.proxyResp, err = client.Do(proxyReq)
 	if err != nil {
 		return err
@@ -65,7 +83,7 @@ func (hh *HttpHandler) doRequest() error {
 }
 
 func (hh *HttpHandler) sendResponse() error {
-	copyHeaders(hh.proxyResp.Header, hh.respWriter.Header())
+	utils.CopyHeaders(hh.proxyResp.Header, hh.respWriter.Header())
 	hh.respWriter.WriteHeader(hh.proxyResp.StatusCode)
 	hh.respWriter.Header().Add("Connection", hh.proxyResp.Header.Get("Connection"))
 

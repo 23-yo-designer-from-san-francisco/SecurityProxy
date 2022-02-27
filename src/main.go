@@ -1,10 +1,11 @@
 package main
 
 import (
-	"Proxy/handlers"
-	"net/http"
-
+	"Proxy/proxyHandlers"
+	"Proxy/repeatReqHandlers"
 	"github.com/sirupsen/logrus"
+	"net/http"
+	"os"
 )
 
 func init() {
@@ -15,13 +16,26 @@ func init() {
 }
 
 func main() {
-	PORT := "8080"
-	server := &http.Server{
-		Addr:    ":" + PORT,
-		Handler: http.HandlerFunc(handlers.ServeHttp),
+	proxyPort := "8080"
+	if port := os.Getenv("PROXY_PORT"); len(port) != 0 {
+		proxyPort = port
+	}
+	dashboardPort := "80"
+	if port := os.Getenv("DASHBOARD_PORT"); len(port) != 0 {
+		dashboardPort = port
 	}
 
-	logrus.Info("Server started on port ", PORT)
+	server := &http.Server{
+		Addr:    ":" + proxyPort,
+		Handler: http.HandlerFunc(proxyHandlers.ServeHttp),
+	}
 
+	http.HandleFunc("/", repeatReqHandlers.SendRequestList)
+	http.HandleFunc("/req", repeatReqHandlers.ExecRepReq)
+
+	logrus.Info("Proxy server started on port ", proxyPort)
+	logrus.Info("Repeat server started on port ", dashboardPort)
+
+	go http.ListenAndServe(":"+dashboardPort, nil)
 	logrus.Fatal(server.ListenAndServe())
 }
