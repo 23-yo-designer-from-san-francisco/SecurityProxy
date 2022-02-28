@@ -7,11 +7,11 @@ docker build -t proxy .
 
 # Run
 ```bash
-docker run -dp 8080:8080 proxy
+docker run -dp 8080:8080 -p 80:80 proxy
 ```
 
 # Status
 - [x] HTTP Proxy
-- [ ] HTTPS Proxy
-- [ ] Query storage
+- [x] HTTPS Proxy
+- [x] Query storage
 - [ ] Vulnerability scanner
