@@ -17,9 +17,7 @@ type Param struct {
 	vulnerable bool
 }
 
-// const GETParamsRegex = `([?&])([a-zA-Z0-9~\-_.!*'(),%]+)=([a-zA-Z0-9~\-_.!*'(),%]+)`
-
-const GETParamsRegex = `\?.+`
+const GETParamsRegex = `\?[a-zA-Z0-9~\-_.!*'(),%=&]+`
 const POSTParamsRegex = `\n\r\n(.+)`
 
 func getReqFromParam(respWriter http.ResponseWriter, request *http.Request) db.Request {
@@ -50,26 +48,27 @@ func getReqFromParam(respWriter http.ResponseWriter, request *http.Request) db.R
 	return dbConn.GetReqById(id)
 }
 
-func findGETParams(req string) [][]string {
+func findGETParams(req string) []Param {
 	r := regexp.MustCompile(GETParamsRegex)
-	matches := r.FindAllStringSubmatch(req, -1)
-	logrus.Debug(matches)
-	return matches
+	matches := r.FindAllString(req, -1)
+	return splitKeyAndValue(matches[0][1:])
 }
 
 func findPOSTParams(req string) []Param {
 	r := regexp.MustCompile(POSTParamsRegex)
-	logrus.Debug(req)
 	matches := r.FindAllStringSubmatch(req, -1)
-	params := make([]Param, 0)
+	return splitKeyAndValue(matches[0][1])
+}
 
-	for _, paramStr := range strings.Split(matches[0][1], "&") {
+func splitKeyAndValue(matches string) []Param {
+	str := strings.Split(matches, "&")
+	params := make([]Param, 0)
+	for _, paramStr := range str {
 		var param Param
 		parts := strings.Split(paramStr, "=")
 		param.key = parts[0]
 		param.value = parts[1]
 		params = append(params, param)
 	}
-
 	return params
 }
