@@ -12,10 +12,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type ParamClass string
+
+const (
+	QueryParam ParamClass = "query param"
+	Cookie                = "cookie"
+	Header                = "header"
+)
+
 type Param struct {
 	key        string
 	value      string
 	vulnerable bool
+	class      ParamClass
 }
 
 func (p *Param) serialize() string {
@@ -61,16 +70,16 @@ func getReqFromParam(respWriter http.ResponseWriter, request *http.Request) db.R
 func findGETParams(req string) []Param {
 	r := regexp.MustCompile(GETParamsRegex)
 	matches := r.FindAllString(req, -1)
-	return splitKeyAndValue(matches[0][1:])
+	return splitKeyAndValue(matches[0][1:], QueryParam)
 }
 
 func findPOSTParams(req string) []Param {
 	r := regexp.MustCompile(POSTParamsRegex)
 	matches := r.FindAllStringSubmatch(req, -1)
-	return splitKeyAndValue(matches[0][1])
+	return splitKeyAndValue(matches[0][1], QueryParam)
 }
 
-func splitKeyAndValue(matches string) []Param {
+func splitKeyAndValue(matches string, class ParamClass) []Param {
 	str := strings.Split(matches, "&")
 	params := make([]Param, 0)
 	for _, paramStr := range str {
@@ -78,6 +87,7 @@ func splitKeyAndValue(matches string) []Param {
 		parts := strings.Split(paramStr, "=")
 		param.key = parts[0]
 		param.value = parts[1]
+		param.class = class
 		params = append(params, param)
 	}
 	return params
@@ -96,6 +106,7 @@ func tryCookie(req string) []Param {
 		parts := strings.Split(cookie, "=")
 		param.key = parts[0]
 		param.value = parts[1]
+		param.class = Cookie
 		params = append(params, param)
 	}
 
