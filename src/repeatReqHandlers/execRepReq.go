@@ -1,43 +1,17 @@
 package repeatReqHandlers
 
 import (
-	"Proxy/db"
 	"Proxy/utils"
 	"bufio"
-	"fmt"
-	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 func ExecRepReq(respWriter http.ResponseWriter, request *http.Request) {
-	dbConn, err := db.CreateNewDatabaseConnection()
-	if err != nil {
-		logrus.Warn("Can't connect to database")
-		logrus.Error(err)
-	}
-
-	defer dbConn.Close()
-
-	info := request.URL.Query()["id"]
-	if len(info) < 1 {
-		_, _ = fmt.Fprintf(respWriter,
-			"Set id param to query in URL to repeat request\nVisit http://localhost/ for more info\n")
-		return
-	}
-
-	if len(info) > 1 {
-		_, _ = fmt.Fprintf(respWriter, "WARN: using first ID\n")
-	}
-
-	id, err := strconv.Atoi(info[0])
-	if err != nil {
-		logrus.Error(err)
-	}
-
-	req := dbConn.GetReqById(id)
+	req := getReqFromParam(respWriter, request)
 
 	client := http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {

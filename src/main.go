@@ -3,9 +3,10 @@ package main
 import (
 	"Proxy/proxyHandlers"
 	"Proxy/repeatReqHandlers"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
+
+	"github.com/sirupsen/logrus"
 )
 
 func init() {
@@ -32,6 +33,7 @@ func main() {
 
 	http.HandleFunc("/", repeatReqHandlers.SendRequestList)
 	http.HandleFunc("/req", repeatReqHandlers.ExecRepReq)
+	http.HandleFunc("/scan", repeatReqHandlers.TryVulnerabilities)
 
 	logrus.Info("Proxy server started on port ", proxyPort)
 	logrus.Info("Repeat server started on port ", dashboardPort)
