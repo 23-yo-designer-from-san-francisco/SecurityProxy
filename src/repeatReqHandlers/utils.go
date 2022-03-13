@@ -70,12 +70,18 @@ func getReqFromParam(respWriter http.ResponseWriter, request *http.Request) db.R
 func findGETParams(req string) []Param {
 	r := regexp.MustCompile(GETParamsRegex)
 	matches := r.FindAllString(req, -1)
+	if len(matches) == 0 {
+		return make([]Param, 0)
+	}
 	return splitKeyAndValue(matches[0][1:], QueryParam)
 }
 
 func findPOSTParams(req string) []Param {
 	r := regexp.MustCompile(POSTParamsRegex)
 	matches := r.FindAllStringSubmatch(req, -1)
+	if len(matches) == 0 {
+		return make([]Param, 0)
+	}
 	return splitKeyAndValue(matches[0][1], QueryParam)
 }
 
@@ -96,7 +102,9 @@ func splitKeyAndValue(matches string, class ParamClass) []Param {
 func tryCookie(req string) []Param {
 	r := regexp.MustCompile(CookieRegex)
 	matches := r.FindAllString(req, -1)
-
+	if len(matches) == 0 {
+		return make([]Param, 0)
+	}
 	cookieString := matches[0][8:]
 	cookies := strings.Split(cookieString, "; ")
 
