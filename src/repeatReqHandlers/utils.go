@@ -4,10 +4,23 @@ import (
 	"Proxy/db"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 )
+
+type Param struct {
+	key        string
+	value      string
+	vulnerable bool
+}
+
+// const GETParamsRegex = `([?&])([a-zA-Z0-9~\-_.!*'(),%]+)=([a-zA-Z0-9~\-_.!*'(),%]+)`
+
+const GETParamsRegex = `\?.+`
+const POSTParamsRegex = `\n\r\n(.+)`
 
 func getReqFromParam(respWriter http.ResponseWriter, request *http.Request) db.Request {
 	dbConn, err := db.CreateNewDatabaseConnection()
@@ -35,4 +48,28 @@ func getReqFromParam(respWriter http.ResponseWriter, request *http.Request) db.R
 	}
 
 	return dbConn.GetReqById(id)
+}
+
+func findGETParams(req string) [][]string {
+	r := regexp.MustCompile(GETParamsRegex)
+	matches := r.FindAllStringSubmatch(req, -1)
+	logrus.Debug(matches)
+	return matches
+}
+
+func findPOSTParams(req string) []Param {
+	r := regexp.MustCompile(POSTParamsRegex)
+	logrus.Debug(req)
+	matches := r.FindAllStringSubmatch(req, -1)
+	params := make([]Param, 0)
+
+	for _, paramStr := range strings.Split(matches[0][1], "&") {
+		var param Param
+		parts := strings.Split(paramStr, "=")
+		param.key = parts[0]
+		param.value = parts[1]
+		params = append(params, param)
+	}
+
+	return params
 }

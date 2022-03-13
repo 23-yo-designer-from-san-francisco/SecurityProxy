@@ -3,8 +3,9 @@ package repeatReqHandlers
 import (
 	"Proxy/db"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"net/http"
+
+	"github.com/sirupsen/logrus"
 )
 
 func SendRequestList(respWriter http.ResponseWriter, _ *http.Request) {
@@ -40,24 +41,32 @@ func SendRequestList(respWriter http.ResponseWriter, _ *http.Request) {
 						<td>Host</td>
 						<td>Request</td>
 						<td>Execute</td>
+						<td>Vulnerability</td>
 					</thead>
 				<tbody>`,
 	)
 	for i, req := range reqList {
 		_, _ = fmt.Fprintf(respWriter,
 			`<tr>
-						<td>%d</td>
-						<td>%s</td>
-						<td>%s</td>
-						<td>
-							<a href="http://localhost/req?id=%d">
-								Execute!
-							</a>
-						</td>
-					`,
+					<td>%d</td>
+					<td>%s</td>
+					<td>%s</td>
+					<td>
+						<a href="/req?id=%d">
+							Execute!
+						</a>
+					</td>
+					<td>
+						<a href="/scan?id=%d">
+							Exploit vulnerability
+						</a>
+					</td>
+			</tr>
+			`,
 			i+1,
 			req.Host,
 			req.Request,
+			req.Id,
 			req.Id)
 	}
 	_, _ = fmt.Fprintf(respWriter,
