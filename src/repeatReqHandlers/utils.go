@@ -17,6 +17,14 @@ type Param struct {
 	vulnerable bool
 }
 
+func (p *Param) serialize() string {
+	return fmt.Sprintf("%s=%s", p.key, p.value)
+}
+
+func (p *Param) fakeReplaceValue(val string) string {
+	return fmt.Sprintf("%s=%s", p.key, val)
+}
+
 const GETParamsRegex = `\?[a-zA-Z0-9~\-_.!*'(),%=&]+`
 const POSTParamsRegex = `\n\r\n(.+)`
 
