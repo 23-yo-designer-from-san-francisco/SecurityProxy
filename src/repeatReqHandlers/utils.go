@@ -4,6 +4,7 @@ import (
 	"Proxy/db"
 	"fmt"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -22,7 +23,7 @@ func (p *Param) serialize() string {
 }
 
 func (p *Param) fakeReplaceValue(val string) string {
-	return fmt.Sprintf("%s=%s", p.key, val)
+	return fmt.Sprintf("%s=%s", p.key, url.QueryEscape(val))
 }
 
 const GETParamsRegex = `\?[a-zA-Z0-9~\-_.!*'(),%=&]+`
