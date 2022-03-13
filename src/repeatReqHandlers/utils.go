@@ -26,6 +26,7 @@ func (p *Param) fakeReplaceValue(val string) string {
 	return fmt.Sprintf("%s=%s", p.key, url.QueryEscape(val))
 }
 
+const CookieRegex = `[Cc]ookie:.+`
 const GETParamsRegex = `\?[a-zA-Z0-9~\-_.!*'(),%=&]+`
 const POSTParamsRegex = `\n\r\n(.+)`
 
@@ -79,5 +80,24 @@ func splitKeyAndValue(matches string) []Param {
 		param.value = parts[1]
 		params = append(params, param)
 	}
+	return params
+}
+
+func tryCookie(req string) []Param {
+	r := regexp.MustCompile(CookieRegex)
+	matches := r.FindAllString(req, -1)
+
+	cookieString := matches[0][8:]
+	cookies := strings.Split(cookieString, "; ")
+
+	params := make([]Param, 0)
+	for _, cookie := range cookies {
+		var param Param
+		parts := strings.Split(cookie, "=")
+		param.key = parts[0]
+		param.value = parts[1]
+		params = append(params, param)
+	}
+
 	return params
 }

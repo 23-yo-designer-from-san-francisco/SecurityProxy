@@ -3,9 +3,10 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"os"
+
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/sirupsen/logrus"
-	"os"
 )
 
 type Database struct {
@@ -37,7 +38,7 @@ func CreateNewDatabaseConnection() (*Database, error) {
 	if err != nil {
 		return nil, err
 	}
-	logrus.Debug("DB connection is open")
+
 	if needToInitDB {
 		_, err := dbConn.Exec(schema)
 		if err != nil {
